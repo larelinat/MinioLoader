@@ -20,16 +20,25 @@ const metaData: ItemBucketMetadata = {
 
 const minioLoader = new MinioLoader(params, 'test-bucket');
 
-minioLoader.loadFile('testfile.txt', file, metaData, (err, res) => {
+
+/*minioLoader.loadFile('testfile2.txt', file, metaData, (err, res) => {
     if (err) {
         throw err;
     }
     console.log(res.etag, res.versionId);
 } );
 
-minioLoader.loadFolder('testfolder1', folder, metaData, (err, res) => {
+minioLoader.loadFolder('testfolder2', folder, metaData, (err, res) => {
     if (err) {
         throw err;
     }
     console.log(res.etag, res.versionId);
+})*/
+
+
+
+
+minioLoader.getObject('hello.txt').then((res) => {
+    console.log(res);
 })
+

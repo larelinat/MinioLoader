@@ -1,8 +1,10 @@
 import * as Minio from 'minio';
-import {ItemBucketMetadata, UploadedObjectInfo} from "minio";
+import {ItemBucketMetadata, NoResultCallback, UploadedObjectInfo} from "minio";
 import {ResultCallback} from "minio/dist/main/internal/type";
 import * as fs from "fs";
 import * as path from 'path';
+
+
 
 export interface IParamsMinio {
     endPoint: string,
@@ -26,9 +28,13 @@ interface IMinioLoader {
     loadFolder(
         folderName: string,
         folderPath: string,
-        metadata: ItemBucketMetadata | undefined,
+        metadata?: ItemBucketMetadata | undefined,
         callback?: ResultCallback<UploadedObjectInfo>
     ): void
+
+    getObject(
+        objectName: string,
+    ): Promise<any>
 }
 
 class MinioLoader implements IMinioLoader {
@@ -47,26 +53,43 @@ class MinioLoader implements IMinioLoader {
     }
 
     loadFolder(folderName: string, folderPath: string, metadata: ItemBucketMetadata, callback: ResultCallback<UploadedObjectInfo>): void {
-        fs.readdir(folderPath, (err, files) => {
-            if (err) {
-                throw err;
-            }
-            files.forEach(file => {
-                fs.stat(folderPath + '/' + file, (errStat, stat) => {
-                    if (errStat) {
-                        throw errStat;
-                    }
-                    if (stat.isDirectory()) {
-
-                        this.loadFolder(folderName + '/' + file, folderPath + '/' + file, metadata, callback);
-                    }
-                    else {
-                        this.loadFile(folderName + '/' + file, folderPath + '/' + file, metadata, callback);
-                    }
-                })
-            });
+        fs.readdirSync(folderPath).forEach(file => {
+            fs.statSync(folderPath + '/' + file).isDirectory()
+                ? this.loadFolder(folderName + '/' + file, folderPath + '/' + file, metadata, callback)
+                : this.loadFile(folderName + '/' + file, folderPath + '/' + file, metadata, callback);
         })
     }
+
+    getObject(objectName: string) {
+        //this.minioClient.fGetObject(this.bucketName, objectName, filePath, callback);
+        let size = 0;
+
+        return new Promise((resolve, reject) => {
+            this.minioClient.getObject(this.bucketName, objectName, (err, dataStream) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    dataStream.on('data', (chunk) => {
+                        size += chunk.length;
+                    });
+                    dataStream.on('end', () => {
+                        resolve(size);
+                    });
+                    dataStream.on('error', (err) => {
+                        reject(err);
+                    });
+                }
+            })
+        })
+
+        /*this.minioClient.getObject(this.bucketName, objectName)
+            .then((dataStream) => {
+
+              console.log(dataStream);
+            })*/
+    }
+
+
 }
 
 export default MinioLoader;
