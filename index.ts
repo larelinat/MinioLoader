@@ -1,6 +1,6 @@
-import {ItemBucketMetadata} from 'minio';
-import * as Minio from 'minio';
 import MinioLoader, {IParamsMinio} from "./MinioLoader";
+// @ts-ignore
+import express from 'express';
 
 const params: IParamsMinio = {
     endPoint: 'dev-grups.sc.s3.dns-shop.ru',
@@ -9,36 +9,21 @@ const params: IParamsMinio = {
     secretKey: 'LTEs9HZAsW2gwttSV4pCjHqbDFJZGnIeK2HzPPTOOVNqI2DES7JNPYQZSacqNV8n',
 };
 
-
-const file = './testfile.txt';
-const folder = 'testfolder';
-
-const metaData: ItemBucketMetadata = {
-    'Content-Type': 'text/plain',
-    'test-metadata': 'hello, world'
-}
-
 const minioLoader = new MinioLoader(params, 'test-bucket');
 
 
-/*minioLoader.loadFile('testfile2.txt', file, metaData, (err, res) => {
-    if (err) {
-        throw err;
-    }
-    console.log(res.etag, res.versionId);
-} );
+const app = express();
+const port = 5000;
 
-minioLoader.loadFolder('testfolder2', folder, metaData, (err, res) => {
-    if (err) {
-        throw err;
-    }
-    console.log(res.etag, res.versionId);
-})*/
-
-
-
-
-minioLoader.getObject('hello.txt').then((res) => {
-    console.log(res);
+app.get('/', (req, res) => {
+    const fileName = req.query.fileName?.toString();
+    fileName
+        ? minioLoader.getObject(fileName).then((obj) => {
+            res.send(obj);
+        })
+        : res.send('Error! No file name.');
 })
 
+app.listen(port, () => {
+    console.log(`Listening on port ${port}`);
+})
